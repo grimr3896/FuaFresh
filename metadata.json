@@ -1,0 +1,6 @@
+{
+  "name": "Fua Fresh — Premium At-Home Cleaning & Laundry in Kenya",
+  "description": "Professional at-home cleaning and laundry performed right inside your home in Kenya. No drop-off. No pickup. We Come To You.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
