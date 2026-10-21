@@ -53,7 +53,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const bookingToDisplay = currentBooking || {
     serviceId: 'home-cleaning' as const,
     homeSize: '2 BR Apartment',
-    homeSizePrice: 2200,
+    homeSizePrice: 800,
     selectedExtras: ['Degrease Kitchen Stovetop & Hood', 'Interior Window Pane Polish'],
     extrasTotal: 900,
     ecoProducts: true,
@@ -68,7 +68,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
     phoneNumber: '0712 345 678',
     paymentMethod: 'mpesa' as const,
     mpesaPhone: '0712 345 678',
-    totalPrice: 3350,
+    totalPrice: 1950,
   };
 
   return (

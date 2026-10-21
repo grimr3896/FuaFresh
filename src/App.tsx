@@ -21,7 +21,6 @@ import { ServicesView } from './components/ServicesView';
 import { HowItWorksView } from './components/HowItWorksView';
 import { PricingView } from './components/PricingView';
 import { ProfessionalsView } from './components/ProfessionalsView';
-import { AuthModal } from './components/AuthModal';
 import { MobileTabBar } from './components/MobileTabBar';
 
 export default function App() {
@@ -30,11 +29,6 @@ export default function App() {
   const [transitionProgress, setTransitionProgress] = useState(false);
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<ServiceType>('home-cleaning');
   const [confirmedBooking, setConfirmedBooking] = useState<BookingData | null>(null);
-  
-  // Auth state
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userPhone, setUserPhone] = useState('0712 345 678');
 
   // Page Transition Handler with thin blue-to-aqua sweep
   const navigateTo = (newPage: Page) => {
@@ -66,13 +60,6 @@ export default function App() {
 
   const handleBookingComplete = (booking: BookingData) => {
     setConfirmedBooking(booking);
-    setIsLoggedIn(true);
-    setUserPhone(booking.phoneNumber || '0712 345 678');
-  };
-
-  const handleLoginSuccess = (phone: string) => {
-    setIsLoggedIn(true);
-    setUserPhone(phone);
   };
 
   return (
@@ -88,9 +75,6 @@ export default function App() {
       <Navbar
         currentPage={currentPage}
         onNavigate={navigateTo}
-        onOpenLogin={() => setIsAuthModalOpen(true)}
-        isLoggedIn={isLoggedIn}
-        userPhone={userPhone}
       />
 
       {/* Main View Area with Smooth Transitions */}
@@ -197,15 +181,6 @@ export default function App() {
       <MobileTabBar
         currentPage={currentPage}
         onNavigate={navigateTo}
-        onOpenLogin={() => setIsAuthModalOpen(true)}
-        isLoggedIn={isLoggedIn}
-      />
-
-      {/* Authentication Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
       />
     </div>
   );

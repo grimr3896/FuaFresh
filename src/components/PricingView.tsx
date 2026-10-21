@@ -20,16 +20,16 @@ export const PricingView: React.FC<PricingViewProps> = ({
 
   // Calculate live estimate
   const baseRates: Record<ServiceType, number> = {
-    'home-cleaning': 2000,
-    'laundry': 1800,
-    'deep-cleaning': 4200,
-    'ironing': 1500,
-    'custom': 3000
+    'home-cleaning': 800,
+    'laundry': 350,
+    'deep-cleaning': 1000,
+    'ironing': 1000,
+    'custom': 2500
   };
 
   const roomMultiplier = bedrooms === 1 ? 0.85 : bedrooms === 2 ? 1.0 : bedrooms === 3 ? 1.3 : 1.6;
   let estimatedTotal = Math.round(baseRates[selectedService] * roomMultiplier);
-  if (includeLaundry && selectedService !== 'laundry') estimatedTotal += 1200;
+  if (includeLaundry && selectedService !== 'laundry') estimatedTotal += 350;
   if (includeOvenDegrease) estimatedTotal += 600;
   if (includeBalcony) estimatedTotal += 500;
 
@@ -121,7 +121,7 @@ export const PricingView: React.FC<PricingViewProps> = ({
                       onChange={(e) => setIncludeLaundry(e.target.checked)}
                       className="accent-[#1D4ED8] rounded w-4 h-4"
                     />
-                    <span>Add In-Home Laundry & Line Dry (+KES 1,200)</span>
+                    <span>Add In-Home Laundry & Line Dry (+KES 350)</span>
                   </label>
                 )}
                 <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">

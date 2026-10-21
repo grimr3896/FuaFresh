@@ -8,8 +8,8 @@ export const SERVICES: ServiceItem[] = [
     description: 'Professional cleaning performed right inside your home. Kitchen, bedrooms, living spaces, and bathroom sanitization.',
     accent: 'blue',
     hex: '#1D4ED8',
-    startingPrice: 'Starting from KES 2,200',
-    priceAmount: 2200,
+    startingPrice: 'Starting from KES 800',
+    priceAmount: 800,
     iconName: 'Sparkles',
     durationEstimate: '2.5 - 3.5 hrs',
     features: [
@@ -27,8 +27,8 @@ export const SERVICES: ServiceItem[] = [
     description: 'Washed, dried, and folded inside your home. We use your laundry machines or hand-wash station on-site.',
     accent: 'aqua',
     hex: '#14B8A6',
-    startingPrice: 'Starting from KES 1,800',
-    priceAmount: 1800,
+    startingPrice: 'Starting from KES 350',
+    priceAmount: 350,
     iconName: 'Shirt',
     durationEstimate: '2 - 3 hrs',
     features: [
@@ -46,8 +46,8 @@ export const SERVICES: ServiceItem[] = [
     description: 'Comprehensive high-detail sanitization for move-ins, move-outs, post-renovation, or seasonal spring resets.',
     accent: 'lavender',
     hex: '#A78BFA',
-    startingPrice: 'Starting from KES 4,500',
-    priceAmount: 4500,
+    startingPrice: 'Starting from KES 1,000',
+    priceAmount: 1000,
     iconName: 'ShieldCheck',
     durationEstimate: '4 - 6 hrs',
     features: [
@@ -65,8 +65,8 @@ export const SERVICES: ServiceItem[] = [
     description: 'Expert steam pressing and folding right at your ironing station. Work shirts, linens, trousers and delicate fabrics.',
     accent: 'coral',
     hex: '#FF6B5E',
-    startingPrice: 'Starting from KES 1,500',
-    priceAmount: 1500,
+    startingPrice: 'Starting from KES 1,000',
+    priceAmount: 1000,
     iconName: 'Flame',
     durationEstimate: '1.5 - 2.5 hrs',
     features: [
@@ -84,8 +84,8 @@ export const SERVICES: ServiceItem[] = [
     description: 'Tailored housekeeping adapted to your household routine, combining cleaning, laundry, organization and meal prep cleanup.',
     accent: 'amber',
     hex: '#FBBF24',
-    startingPrice: 'Starting from KES 3,200',
-    priceAmount: 3200,
+    startingPrice: 'Starting from KES 2,500',
+    priceAmount: 2500,
     iconName: 'Sliders',
     durationEstimate: 'Custom duration',
     features: [
@@ -223,7 +223,7 @@ export const PRICING_TIERS = [
   {
     name: 'Essential In-Home Reset',
     description: 'Perfect for regular maintenance of 1 to 2 bedroom apartments.',
-    priceText: 'Starting from KES 2,200',
+    priceText: 'Starting from KES 800',
     note: 'Final price shown after you choose your requirements.',
     popular: false,
     accent: 'blue',
@@ -238,7 +238,7 @@ export const PRICING_TIERS = [
   {
     name: 'Full Home + Laundry Care',
     description: 'Our most loved package combining deep housekeeping and full wardrobe wash & fold.',
-    priceText: 'Starting from KES 3,800',
+    priceText: 'Starting from KES 1,150',
     note: 'Final price shown after you choose your requirements.',
     popular: true,
     accent: 'aqua',
@@ -253,7 +253,7 @@ export const PRICING_TIERS = [
   {
     name: 'Comprehensive Deep Revival',
     description: 'Ideal for move-ins, large family residences in Karen/Runda, or seasonal overhauls.',
-    priceText: 'Starting from KES 5,500',
+    priceText: 'Starting from KES 1,000',
     note: 'Final price shown after you choose your requirements.',
     popular: false,
     accent: 'lavender',

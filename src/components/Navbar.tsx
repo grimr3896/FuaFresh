@@ -5,17 +5,11 @@ import { Sparkles, Menu, X, Shield, PhoneCall } from 'lucide-react';
 interface NavbarProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
-  onOpenLogin: () => void;
-  isLoggedIn: boolean;
-  userPhone: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentPage,
-  onNavigate,
-  onOpenLogin,
-  isLoggedIn,
-  userPhone
+  onNavigate
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -89,26 +83,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right Actions: Log in + Book a Service */}
+          {/* Right Actions: Track Order + Book a Service */}
           <div className="hidden md:flex items-center gap-5">
-            {isLoggedIn ? (
-              <button
-                onClick={() => onNavigate('dashboard')}
-                className="text-sm font-medium text-slate-700 hover:text-[#1D4ED8] flex items-center gap-1.5 transition-colors"
-              >
-                <div className="w-7 h-7 rounded-full bg-blue-100 text-[#1D4ED8] flex items-center justify-center text-xs font-bold">
-                  {userPhone.slice(-2) || 'KE'}
-                </div>
-                <span>Dashboard</span>
-              </button>
-            ) : (
-              <button
-                onClick={onOpenLogin}
-                className="text-sm font-medium text-slate-700 hover:text-[#1D4ED8] transition-colors py-1"
-              >
-                Log in
-              </button>
-            )}
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className={`text-sm font-medium transition-colors py-1 ${
+                currentPage === 'dashboard'
+                  ? 'text-[#1D4ED8] font-semibold'
+                  : 'text-slate-600 hover:text-[#0B1F4B]'
+              }`}
+            >
+              Track Order
+            </button>
 
             <button
               onClick={() => onNavigate('booking')}
@@ -161,31 +147,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {link.label}
               </button>
             ))}
+            <button
+              onClick={() => {
+                onNavigate('dashboard');
+                setMobileMenuOpen(false);
+              }}
+              className={`text-left text-base font-medium py-2 px-3 rounded-lg transition-colors ${
+                currentPage === 'dashboard'
+                  ? 'bg-blue-50 text-[#1D4ED8] font-semibold'
+                  : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              Track Order
+            </button>
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
-            {isLoggedIn ? (
-              <button
-                onClick={() => {
-                  onNavigate('dashboard');
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-center py-2.5 text-sm font-semibold text-[#1D4ED8] bg-blue-50 rounded-xl"
-              >
-                Go to Dashboard
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  onOpenLogin();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-center py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl"
-              >
-                Log in
-              </button>
-            )}
-
             <button
               onClick={() => {
                 onNavigate('booking');
