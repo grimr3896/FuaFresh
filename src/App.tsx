@@ -35,7 +35,7 @@ function AppContent() {
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<ServiceType>('home-cleaning');
   const [confirmedBooking, setConfirmedBooking] = useState<BookingData | null>(null);
   const [authInitialTab, setAuthInitialTab] = useState<'signin' | 'signup-client' | 'join-cleaner'>('signin');
-  const { currentUser, quickLoginAs } = useAuth();
+  const { currentUser } = useAuth();
 
   // Page Transition Handler with thin blue-to-aqua sweep
   const navigateTo = (newPage: Page, authTab?: 'signin' | 'signup-client' | 'join-cleaner') => {
@@ -220,15 +220,7 @@ function AppContent() {
                 </div>
 
                 <div className="space-y-3 pt-2">
-                  <button
-                    onClick={() => {
-                      quickLoginAs('admin');
-                    }}
-                    className="w-full bg-[#1D4ED8] hover:bg-[#1e40af] text-white font-bold py-3 px-5 rounded-xl shadow-md shadow-blue-600/25 transition-all text-xs flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Sign In as Demo Admin (Wanjiku Mwangi)</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => navigateTo('auth')} className="w-full bg-[#1D4ED8] hover:bg-[#1e40af] text-white font-bold py-3 px-5 rounded-xl shadow-md transition-all text-xs">Sign In with Staff Credentials</button>
 
                   <button
                     onClick={() => navigateTo('auth')}
@@ -272,15 +264,7 @@ function AppContent() {
                 </div>
 
                 <div className="space-y-3 pt-2">
-                  <button
-                    onClick={() => {
-                      quickLoginAs('cleaner');
-                    }}
-                    className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-5 rounded-xl shadow-md shadow-teal-700/25 transition-all text-xs flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Sign In as Demo Cleaner (Mercy Wambui)</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => navigateTo('auth')} className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-5 rounded-xl shadow-md transition-all text-xs">Sign In to Cleaner Account</button>
 
                   <button
                     onClick={() => navigateTo('auth')}
