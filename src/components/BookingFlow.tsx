@@ -314,7 +314,21 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
         }),
       });
 
-      let stkData: any;\n      try {\n        stkData = await readApiResponse(stkRes);\n      } catch (error: any) {\n        if (stkRes.status === 428) {\n          setPaymentStatus('idle');\n          setCredentialsNotice({\n            message: error.message,\n            missing: ['Check Daraja environment variables in Vercel'],\n            orderId: order.id,\n          });\n          return;\n        }\n        throw error;\n      }
+      let stkData: any;
+      try {
+        stkData = await readApiResponse(stkRes);
+      } catch (error: any) {
+        if (stkRes.status === 428) {
+          setPaymentStatus('idle');
+          setCredentialsNotice({
+            message: error.message,
+            missing: ['Check Daraja environment variables in Vercel'],
+            orderId: order.id,
+          });
+          return;
+        }
+        throw error;
+      }
 
       if (stkRes.status === 428 || stkData.error === 'MISSING_CREDENTIALS') {
         setPaymentStatus('idle');
