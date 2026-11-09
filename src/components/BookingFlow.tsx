@@ -34,6 +34,22 @@ interface BookingFlowProps {
 
 const STEPS = ['Service', 'Details', 'Schedule', 'Location', 'Review', 'Payment'];
 
+async function readApiResponse(response: Response): Promise<any> {
+  const raw = await response.text();
+  let data: any;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    const contentType = response.headers.get('content-type') || 'unknown content type';
+    const preview = raw.replace(/\\s+/g, ' ').slice(0, 180);
+    throw new Error(`The server returned an unexpected response (HTTP ${response.status}, ${contentType}). ${preview}`);
+  }
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `Request failed with HTTP ${response.status}.`);
+  }
+  return data;
+}
+
 export const BookingFlow: React.FC<BookingFlowProps> = ({
   initialServiceId = 'home-cleaning',
   onNavigate,
@@ -197,9 +213,9 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
       paymentMethod,
       mpesaPhone,
       totalPrice,
-      businessShortCode: '174379',
+      businessShortCode: '',
       orderId: ordId || activeOrderId,
-      checkoutRequestId: cReqId || checkoutRequestId || 'ws_CO_260520211133524545',
+      checkoutRequestId: cReqId || checkoutRequestId,
       mpesaReceiptNumber: receiptCode,
     };
     setConfirmedBooking(newBooking);
@@ -217,7 +233,7 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
       try {
         const res = await fetch(`/api/mpesa/status/${encodeURIComponent(cReqId)}`);
         if (!res.ok) return;
-        const data = await res.json();
+        const data = await readApiResponse(res);
 
         if (data.status === 'SUCCESS') {
           clearInterval(pollTimerRef.current);
@@ -287,7 +303,7 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
         throw new Error(errData.error || 'Failed to initialize booking order.');
       }
 
-      const { order } = await orderRes.json();
+      const { order } = await readApiResponse(orderRes);
       setActiveOrderId(order.id);
 
       // 2. Initiate STK Push via server
@@ -300,7 +316,7 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
         }),
       });
 
-      const stkData = await stkRes.json();
+      let stkData: any;\n      try {\n        stkData = await readApiResponse(stkRes);\n      } catch (error: any) {\n        if (stkRes.status === 428) {\n          setPaymentStatus('idle');\n          setCredentialsNotice({\n            message: error.message,\n            missing: ['Check Daraja environment variables in Vercel'],\n            orderId: order.id,\n          });\n          return;\n        }\n        throw error;\n      }
 
       if (stkRes.status === 428 || stkData.error === 'MISSING_CREDENTIALS') {
         setPaymentStatus('idle');
@@ -403,15 +419,15 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
             )}
             <div className="flex justify-between py-1 border-b border-slate-200/50">
               <span className="text-slate-500">M-Pesa Receipt:</span>
-              <span className="font-mono font-bold text-emerald-700">{confirmedBooking.mpesaReceiptNumber || 'NLJ7RT61SV'}</span>
+              <span className="font-mono font-bold text-emerald-700">{confirmedBooking.mpesaReceiptNumber || 'Awaiting receipt'}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-200/50">
               <span className="text-slate-500">Business ShortCode:</span>
-              <span className="font-mono font-bold text-[#0B1F4B]">{confirmedBooking.businessShortCode || '174379'}</span>
+              <span className="font-mono font-bold text-[#0B1F4B]">{confirmedBooking.businessShortCode || 'Configured on server'}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-200/50">
               <span className="text-slate-500">Checkout Request ID:</span>
-              <span className="font-mono text-[10px] text-slate-600 truncate max-w-[200px]">{confirmedBooking.checkoutRequestId || 'ws_CO_260520211133524545'}</span>
+              <span className="font-mono text-[10px] text-slate-600 truncate max-w-[200px]">{confirmedBooking.checkoutRequestId || '—'}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-200/50">
               <span className="text-slate-500">Payment Channel:</span>
