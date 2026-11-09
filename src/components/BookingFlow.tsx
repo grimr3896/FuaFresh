@@ -41,7 +41,7 @@ async function readApiResponse(response: Response): Promise<any> {
     data = raw ? JSON.parse(raw) : {};
   } catch {
     const contentType = response.headers.get('content-type') || 'unknown content type';
-    const preview = raw.replace(/\\s+/g, ' ').slice(0, 180);
+    const preview = raw.replace(/\s+/g, ' ').slice(0, 180);
     throw new Error(`The server returned an unexpected response (HTTP ${response.status}, ${contentType}). ${preview}`);
   }
   if (!response.ok) {
