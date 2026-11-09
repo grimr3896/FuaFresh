@@ -22,7 +22,7 @@ export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onNavigate }) =>
     },
     {
       q: 'How does M-Pesa payment work?',
-      a: 'When you finalize your booking, an instant Safaricom STK prompt is sent directly to your phone. You simply enter your PIN. Funds are safely processed with clear digital receipts.'
+      a: 'When you finalize your booking, an instant Safaricom STK prompt is sent directly to your phone. Simply approve the transaction on your phone, and your in-home booking is immediately confirmed with an official M-Pesa receipt.'
     }
   ];
 

@@ -99,6 +99,7 @@ export const SERVICES: ServiceItem[] = [
 ];
 
 export const NAIROBI_ESTATES = [
+  'Ruiru, Kiambu/Nairobi Metropolitan',
   'Kilimani, Nairobi',
   'Kileleshwa, Nairobi',
   'Westlands, Nairobi',
@@ -115,6 +116,18 @@ export const NAIROBI_ESTATES = [
   'South B, Nairobi',
   'Syokimau, Machakos/Nairobi border',
   'Ngong Road / Jamhuri, Nairobi'
+];
+
+export const RUIRU_SUB_AREAS = [
+  'Ruiru Town Center',
+  'Membley Estate, Ruiru',
+  'Kamakis (Eastern Bypass), Ruiru',
+  'Kimbo / Toll Station, Ruiru',
+  'Mugutha Estate, Ruiru',
+  'Kihunguro, Ruiru',
+  'Murera / Matangi, Ruiru',
+  'Githurai 44/45 (Ruiru Border)',
+  'Kahawa Sukari / Wendani'
 ];
 
 export const PROFESSIONALS: Professional[] = [

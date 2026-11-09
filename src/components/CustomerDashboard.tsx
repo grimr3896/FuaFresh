@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookingData, Page, TrackerStage } from '../types';
 import { PROFESSIONALS } from '../data';
+import { useAuth } from '../context/AuthContext';
 import {
   Calendar,
   Clock,
@@ -34,6 +35,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   currentBooking,
   onNavigate
 }) => {
+  const { currentUser } = useAuth();
   const [activeStage, setActiveStage] = useState<TrackerStage>('on_the_way');
   const [isLoadingSkeleton, setIsLoadingSkeleton] = useState(false);
 
@@ -61,13 +63,13 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
     date: 'Today, 10:00 AM',
     timeSlot: '09:00 AM - 12:00 PM',
     address: 'Ring Road, Kilimani, Apt 4B, Oasis Court',
-    estate: 'Kilimani, Nairobi',
+    estate: currentUser?.estate || 'Kilimani, Nairobi',
     houseNumber: 'Apt 4B',
     accessInstructions: 'Gate code 1492, elevator to 4th floor.',
-    customerName: 'Wanjiku Kamau',
-    phoneNumber: '0712 345 678',
+    customerName: currentUser?.name || 'Wanjiku Kamau',
+    phoneNumber: currentUser?.phone || '0712 345 678',
     paymentMethod: 'mpesa' as const,
-    mpesaPhone: '0712 345 678',
+    mpesaPhone: currentUser?.phone || '0712 345 678',
     totalPrice: 1950,
   };
 
@@ -300,14 +302,19 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                       <h4 className="text-base font-bold text-[#0B1F4B]">
                         In-Home Household Service
                       </h4>
-                      <p className="text-xs text-slate-500">
-                        Reference: #FUA-KE-8492
+                      <p className="text-xs text-slate-500 font-mono">
+                        STK Ref: {bookingToDisplay.checkoutRequestId ? `${bookingToDisplay.checkoutRequestId.slice(0, 16)}...` : 'ws_CO_26052021...'}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    Paid via M-Pesa
-                  </span>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 block">
+                      Paid via M-Pesa
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block font-semibold">
+                      ShortCode: {bookingToDisplay.businessShortCode || '174379'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">

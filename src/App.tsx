@@ -22,16 +22,26 @@ import { HowItWorksView } from './components/HowItWorksView';
 import { PricingView } from './components/PricingView';
 import { ProfessionalsView } from './components/ProfessionalsView';
 import { MobileTabBar } from './components/MobileTabBar';
+import { AuthView } from './components/AuthView';
+import { AdminPanel } from './components/AdminPanel';
+import { CleanerPortal } from './components/CleanerPortal';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Shield, Sparkles, ArrowRight, Home } from 'lucide-react';
 
-export default function App() {
+function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionProgress, setTransitionProgress] = useState(false);
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<ServiceType>('home-cleaning');
   const [confirmedBooking, setConfirmedBooking] = useState<BookingData | null>(null);
+  const [authInitialTab, setAuthInitialTab] = useState<'signin' | 'signup-client' | 'join-cleaner'>('signin');
+  const { currentUser, quickLoginAs } = useAuth();
 
   // Page Transition Handler with thin blue-to-aqua sweep
-  const navigateTo = (newPage: Page) => {
+  const navigateTo = (newPage: Page, authTab?: 'signin' | 'signup-client' | 'join-cleaner') => {
+    if (authTab) {
+      setAuthInitialTab(authTab);
+    }
     if (newPage === currentPage) return;
 
     // Start transition
@@ -62,6 +72,8 @@ export default function App() {
     setConfirmedBooking(booking);
   };
 
+  const isNavHidden = currentPage === 'admin';
+
   return (
     <div className="min-h-screen bg-white text-[#0B1F4B] flex flex-col font-sans selection:bg-[#1D4ED8]/10 selection:text-[#1D4ED8]">
       {/* Page Sweep Progress Bar during transition */}
@@ -71,11 +83,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Sticky Fixed Navbar */}
-      <Navbar
-        currentPage={currentPage}
-        onNavigate={navigateTo}
-      />
+      {/* Sticky Fixed Navbar (Hidden in full-screen Admin console) */}
+      {!isNavHidden && (
+        <Navbar
+          currentPage={currentPage}
+          onNavigate={navigateTo}
+        />
+      )}
 
       {/* Main View Area with Smooth Transitions */}
       <main
@@ -175,13 +189,134 @@ export default function App() {
             onNavigate={navigateTo}
           />
         )}
+
+        {currentPage === 'auth' && (
+          <>
+            <AuthView onNavigate={navigateTo} initialTab={authInitialTab} />
+            <Footer onNavigate={navigateTo} />
+          </>
+        )}
+
+        {currentPage === 'admin' && (
+          currentUser?.role === 'admin' ? (
+            <AdminPanel onNavigate={navigateTo} />
+          ) : (
+            <div className="min-h-screen pt-28 pb-20 bg-slate-50 flex items-center justify-center px-4">
+              <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center space-y-6">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#1D4ED8] mx-auto flex items-center justify-center border border-blue-200 shadow-sm">
+                  <Shield className="w-8 h-8" />
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    Restricted Area
+                  </span>
+                  <h2 className="text-2xl font-extrabold text-[#0B1F4B]">
+                    Operations Portal
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    The Fua Fresh Admin Console is reserved for operations coordinators and staff.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <button
+                    onClick={() => {
+                      quickLoginAs('admin');
+                    }}
+                    className="w-full bg-[#1D4ED8] hover:bg-[#1e40af] text-white font-bold py-3 px-5 rounded-xl shadow-md shadow-blue-600/25 transition-all text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Sign In as Demo Admin (Wanjiku Mwangi)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => navigateTo('auth')}
+                    className="w-full bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold py-2.5 px-5 rounded-xl transition-all text-xs cursor-pointer"
+                  >
+                    Enter Specific Staff Credentials
+                  </button>
+
+                  <button
+                    onClick={() => navigateTo('home')}
+                    className="w-full text-slate-500 hover:text-slate-800 font-semibold text-xs py-1"
+                  >
+                    Return to Homepage
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {currentPage === 'cleaner-portal' && (
+          currentUser?.role === 'cleaner' ? (
+            <CleanerPortal onNavigate={navigateTo} />
+          ) : (
+            <div className="min-h-screen pt-28 pb-20 bg-gradient-to-b from-teal-50/50 to-slate-50 flex items-center justify-center px-4">
+              <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-teal-200/80 shadow-xl text-center space-y-6">
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-700 mx-auto flex items-center justify-center border border-teal-200 shadow-sm">
+                  <Sparkles className="w-8 h-8 text-teal-600" />
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-teal-800 uppercase tracking-wider block">
+                    Housekeeper Access Only
+                  </span>
+                  <h2 className="text-2xl font-extrabold text-[#0B1F4B]">
+                    Cleaner Dispatch Portal
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    This portal is designed for registered Fua Fresh cleaning specialists to view their schedule, accept bookings, and manage M-Pesa payouts.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <button
+                    onClick={() => {
+                      quickLoginAs('cleaner');
+                    }}
+                    className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-5 rounded-xl shadow-md shadow-teal-700/25 transition-all text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Sign In as Demo Cleaner (Mercy Wambui)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => navigateTo('auth')}
+                    className="w-full bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold py-2.5 px-5 rounded-xl transition-all text-xs cursor-pointer"
+                  >
+                    Sign Up as a New Cleaner
+                  </button>
+
+                  <button
+                    onClick={() => navigateTo('home')}
+                    className="w-full text-slate-500 hover:text-slate-800 font-semibold text-xs py-1"
+                  >
+                    Return to Homepage
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        )}
       </main>
 
-      {/* Mobile Bottom Tab Bar */}
-      <MobileTabBar
-        currentPage={currentPage}
-        onNavigate={navigateTo}
-      />
+      {/* Mobile Bottom Tab Bar (Hidden in Admin console) */}
+      {!isNavHidden && (
+        <MobileTabBar
+          currentPage={currentPage}
+          onNavigate={navigateTo}
+        />
+      )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

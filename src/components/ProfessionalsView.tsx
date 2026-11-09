@@ -133,6 +133,35 @@ export const ProfessionalsView: React.FC<ProfessionalsViewProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Cleaner Fleet Recruitment Banner */}
+        <div className="mt-12 bg-gradient-to-r from-teal-900 via-[#0B1F4B] to-[#1D4ED8] text-white rounded-3xl p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+          <div className="space-y-2 max-w-2xl text-center md:text-left">
+            <span className="text-xs font-bold text-teal-300 uppercase tracking-wider block">
+              Join Nairobi's #1 In-Home Housekeeping Network
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+              Want to Clean with Fua Fresh?
+            </h3>
+            <p className="text-sm text-slate-200 leading-relaxed font-normal">
+              Earn 75% on every booking, keep 100% of tips, get weekly M-Pesa automatic disbursements, and choose your preferred estates across Nairobi (Kilimani, Westlands, Karen, Kileleshwa).
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+            <button
+              onClick={() => onNavigate('auth')}
+              className="py-3 px-6 rounded-xl bg-teal-400 hover:bg-teal-300 text-[#0B1F4B] text-xs sm:text-sm font-extrabold shadow-md transition-all active:scale-[0.98] cursor-pointer text-center"
+            >
+              Sign Up as a Cleaner
+            </button>
+            <button
+              onClick={() => onNavigate('auth')}
+              className="py-3 px-6 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold border border-white/20 transition-all cursor-pointer text-center"
+            >
+              Cleaner Sign In
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

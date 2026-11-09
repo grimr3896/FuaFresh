@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Page } from '../types';
-import { Sparkles, Menu, X, Shield, PhoneCall } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Sparkles, Menu, X, Shield, User, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   currentPage: Page;
@@ -11,6 +12,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentPage,
   onNavigate
 }) => {
+  const { currentUser, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -83,8 +85,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right Actions: Track Order + Book a Service */}
-          <div className="hidden md:flex items-center gap-5">
+          {/* Right Actions: Track Order + Auth / Admin + Book a Service */}
+          <div className="hidden md:flex items-center gap-4">
             <button
               onClick={() => onNavigate('dashboard')}
               className={`text-sm font-medium transition-colors py-1 ${
@@ -95,6 +97,76 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               Track Order
             </button>
+
+            {/* Auth / Role / Cleaner Links */}
+            {currentUser ? (
+              <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
+                {currentUser.role === 'admin' ? (
+                  <button
+                    onClick={() => onNavigate('admin')}
+                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                      currentPage === 'admin'
+                        ? 'bg-[#1D4ED8] text-white shadow-xs'
+                        : 'bg-blue-50 text-[#1D4ED8] hover:bg-blue-100 border border-blue-200'
+                    }`}
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Admin Panel</span>
+                  </button>
+                ) : currentUser.role === 'cleaner' ? (
+                  <button
+                    onClick={() => onNavigate('cleaner-portal')}
+                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                      currentPage === 'cleaner-portal'
+                        ? 'bg-teal-700 text-white shadow-xs'
+                        : 'bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                    <span>Cleaner Portal</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onNavigate('dashboard')}
+                    className="text-xs font-semibold text-slate-700 hover:text-[#1D4ED8] transition-colors"
+                  >
+                    Hi, {currentUser.name.split(' ')[0]}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => signOut()}
+                  className="text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors"
+                  title="Sign Out"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
+                {/* ONE UNIFIED TAB: Sign Up / Sign In / Join as Cleaner */}
+                <button
+                  onClick={() => onNavigate('auth')}
+                  className={`inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer border ${
+                    currentPage === 'auth'
+                      ? 'bg-[#0B1F4B] text-white border-[#0B1F4B] shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-[#0B1F4B] border-slate-200/90 shadow-2xs'
+                  }`}
+                  title="Sign In, Sign Up as Client, or Join as a Cleaner"
+                >
+                  <User className="w-3.5 h-3.5 text-[#1D4ED8]" />
+                  <span>Sign In / Join as Cleaner</span>
+                </button>
+
+                <button
+                  onClick={() => onNavigate('admin')}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-2 py-1.5 rounded-lg transition-colors"
+                  title="Access Operations Admin Panel"
+                >
+                  Admin
+                </button>
+              </div>
+            )}
 
             <button
               onClick={() => onNavigate('booking')}
@@ -160,6 +232,82 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               Track Order
             </button>
+
+            {currentUser ? (
+              <>
+                {currentUser.role === 'admin' ? (
+                  <button
+                    onClick={() => {
+                      onNavigate('admin');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`text-left text-base font-bold py-2 px-3 rounded-lg transition-colors ${
+                      currentPage === 'admin'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-blue-50 text-[#1D4ED8]'
+                    }`}
+                  >
+                    Admin Operations Console
+                  </button>
+                ) : currentUser.role === 'cleaner' ? (
+                  <button
+                    onClick={() => {
+                      onNavigate('cleaner-portal');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`text-left text-base font-bold py-2 px-3 rounded-lg transition-colors ${
+                      currentPage === 'cleaner-portal'
+                        ? 'bg-teal-700 text-white'
+                        : 'bg-teal-50 text-teal-800'
+                    }`}
+                  >
+                    Cleaner Dispatch Portal
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => {
+                    signOut();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-left text-sm font-semibold py-2 px-3 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                >
+                  Sign Out ({currentUser.name})
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2 pt-2">
+                {/* ONE UNIFIED TAB IN MOBILE DRAWER */}
+                <button
+                  onClick={() => {
+                    onNavigate('auth');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                    currentPage === 'auth'
+                      ? 'bg-[#0B1F4B] text-white'
+                      : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#1D4ED8]" />
+                    <span>Sign In / Sign Up / Join as Cleaner</span>
+                  </div>
+                  <span className="text-[10px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">
+                    All in 1 Tab
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onNavigate('admin');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full text-center py-2 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 rounded-lg border border-slate-200/60"
+                >
+                  Staff Operations Admin Console
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">

@@ -19,7 +19,11 @@ import {
   AlertCircle,
   Home,
   Info,
-  ShieldAlert
+  ShieldAlert,
+  Loader2,
+  RefreshCw,
+  XCircle,
+  KeyRound
 } from 'lucide-react';
 
 interface BookingFlowProps {
@@ -60,11 +64,31 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
   const [customerName, setCustomerName] = useState('Wanjiku K.');
   const [phoneNumber, setPhoneNumber] = useState('0712 345 678');
 
-  // Payment
+  // Payment & Daraja STK
   const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'card'>('mpesa');
   const [mpesaPhone, setMpesaPhone] = useState('0712 345 678');
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<
+    'idle' | 'initiating' | 'awaiting_approval' | 'success' | 'failed' | 'cancelled'
+  >('idle');
+  const [checkoutRequestId, setCheckoutRequestId] = useState<string>('');
+  const [activeOrderId, setActiveOrderId] = useState<string>('');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [credentialsNotice, setCredentialsNotice] = useState<{
+    message: string;
+    missing: string[];
+    orderId?: string;
+  } | null>(null);
+  const [pollCount, setPollCount] = useState(0);
+  const pollTimerRef = React.useRef<any>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<BookingData | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+    };
+  }, []);
 
   // Home size options
   const homeSizeOptions = [
@@ -78,33 +102,41 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
   // Extra requirements options
   const extrasCatalog: { [key in ServiceType]?: { name: string; price: number }[] } = {
     'home-cleaning': [
+      { name: 'Wash & Fold Basket of Clothes', price: 350 },
+      { name: 'Iron & Steam Clothes (10 Garments)', price: 350 },
+      { name: 'Fold & Organize Wardrobe Clothes', price: 250 },
       { name: 'Degrease Kitchen Stovetop & Hood', price: 400 },
-      { name: 'Sanitize Balcony & Balustrades', price: 500 },
-      { name: 'Inside Refrigerator Deep Scrub', price: 600 },
-      { name: 'Interior Window Pane Polish', price: 500 },
-      { name: 'Disinfect Wardrobe Interiors', price: 450 },
+      { name: 'Inside Refrigerator Deep Scrub', price: 450 },
+      { name: 'Sanitize Balcony & Balustrades', price: 400 },
+      { name: 'Interior Window Pane Polish', price: 350 },
     ],
     'laundry': [
-      { name: 'Curtains & Heavy Drapes Wash', price: 800 },
-      { name: 'Duvet & Comforter Deep Wash', price: 700 },
-      { name: 'Delicate Silk / Cashmere Care', price: 600 },
-      { name: 'Bed Linen Hot Sanitization', price: 450 },
+      { name: 'Everyday Clothes Wash & Line Dry (Full Basket)', price: 350 },
+      { name: 'Delicate Clothes & Handwash Care', price: 400 },
+      { name: 'Steam Iron & Hang Washed Clothes', price: 350 },
+      { name: 'Bed Linen & Towels Hot Wash', price: 400 },
+      { name: 'Curtains & Heavy Drapes Wash', price: 600 },
+      { name: 'Duvet & Comforter Deep Wash', price: 500 },
     ],
     'deep-cleaning': [
-      { name: 'Oven & Range Interior Restoration', price: 750 },
-      { name: 'Tile Grout Power Scrub Machine', price: 900 },
-      { name: 'Balcony Jet Scrubbing', price: 600 },
-      { name: 'Full Chandelier Dusting', price: 500 },
+      { name: 'Sanitize & Organize Wardrobe Clothes', price: 400 },
+      { name: 'Oven & Range Interior Restoration', price: 600 },
+      { name: 'Tile Grout Power Scrub Machine', price: 600 },
+      { name: 'Balcony Jet Scrubbing', price: 500 },
+      { name: 'Full Chandelier Dusting', price: 450 },
     ],
     'ironing': [
-      { name: 'Executive Business Shirts (10 pcs)', price: 600 },
-      { name: 'Bedsheet & Duvet Crisp Pressing', price: 500 },
-      { name: 'Pleated Traditional Wear & Dresses', price: 700 },
+      { name: 'Everyday Clothes Pressing (10 pcs)', price: 350 },
+      { name: 'Executive Business Clothes & Shirts (10 pcs)', price: 400 },
+      { name: 'Traditional Wear & Delicate Clothes', price: 450 },
+      { name: 'Bedsheet & Duvet Crisp Pressing', price: 400 },
     ],
     'custom': [
-      { name: 'Combined Laundry + Kitchen Deep Wash', price: 900 },
-      { name: 'Patio & Compound Sweep', price: 600 },
-      { name: 'Full Pantry Reorganization', price: 800 },
+      { name: 'Full Basket Clothes Wash, Dry & Fold', price: 450 },
+      { name: 'Clothes Steam Ironing & Wardrobe Hanging', price: 400 },
+      { name: 'Combined Laundry + Kitchen Deep Wash', price: 600 },
+      { name: 'Full Pantry & Wardrobe Reorganization', price: 550 },
+      { name: 'Patio & Compound Sweep', price: 400 },
     ]
   };
 
@@ -145,33 +177,155 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
     }
   };
 
-  const handleProcessPayment = () => {
-    setPaymentStatus('processing');
-    setTimeout(() => {
-      const newBooking: BookingData = {
-        serviceId: selectedServiceId,
-        homeSize,
-        homeSizePrice: basePrice,
-        selectedExtras,
-        extrasTotal,
-        ecoProducts: ecoUpgrade,
-        notes,
-        date: selectedDate,
-        timeSlot: selectedTimeSlot,
-        address: `${streetAddress}, ${houseNumber}`,
-        estate,
-        houseNumber,
-        accessInstructions,
-        customerName: customerName || 'Valued Homeowner',
-        phoneNumber,
-        paymentMethod,
-        mpesaPhone,
-        totalPrice,
-      };
-      setConfirmedBooking(newBooking);
-      setPaymentStatus('success');
-      onBookingComplete(newBooking);
-    }, 1800);
+  const completeBooking = (receiptCode: string, cReqId?: string, ordId?: string) => {
+    const newBooking: BookingData = {
+      serviceId: selectedServiceId,
+      homeSize,
+      homeSizePrice: basePrice,
+      selectedExtras,
+      extrasTotal,
+      ecoProducts: ecoUpgrade,
+      notes,
+      date: selectedDate,
+      timeSlot: selectedTimeSlot,
+      address: `${streetAddress}, ${houseNumber}`,
+      estate,
+      houseNumber,
+      accessInstructions,
+      customerName: customerName || 'Valued Homeowner',
+      phoneNumber,
+      paymentMethod,
+      mpesaPhone,
+      totalPrice,
+      businessShortCode: '174379',
+      orderId: ordId || activeOrderId,
+      checkoutRequestId: cReqId || checkoutRequestId || 'ws_CO_260520211133524545',
+      mpesaReceiptNumber: receiptCode,
+    };
+    setConfirmedBooking(newBooking);
+    setPaymentStatus('success');
+    onBookingComplete(newBooking);
+  };
+
+  const startPolling = (cReqId: string, ordId: string) => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+    }
+    setPollCount(0);
+
+    pollTimerRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/mpesa/status/${encodeURIComponent(cReqId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.status === 'SUCCESS') {
+          clearInterval(pollTimerRef.current);
+          completeBooking(data.mpesaReceiptNumber || 'NLJ7RT61SV', cReqId, ordId);
+        } else if (data.status === 'CANCELLED') {
+          clearInterval(pollTimerRef.current);
+          setPaymentStatus('cancelled');
+          setPaymentError('The transaction was cancelled on your mobile phone. You can retry anytime.');
+        } else if (data.status === 'FAILED') {
+          clearInterval(pollTimerRef.current);
+          setPaymentStatus('failed');
+          setPaymentError(data.resultDesc || 'Payment could not be completed on Safaricom network.');
+        } else {
+          setPollCount((prev) => prev + 1);
+        }
+      } catch (err) {
+        // network polling retry
+      }
+    }, 2500);
+  };
+
+  const handleProcessPayment = async () => {
+    setPaymentError(null);
+    setCredentialsNotice(null);
+
+    if (paymentMethod === 'card') {
+      setPaymentStatus('initiating');
+      setTimeout(() => {
+        completeBooking('CRD-9482-VISA');
+      }, 1500);
+      return;
+    }
+
+    // Validate phone number before sending
+    const cleaned = mpesaPhone.replace(/\D/g, '');
+    if (!/^(254|0)?(7|1)\d{8}$/.test(cleaned)) {
+      setPaymentError('Please enter a valid Safaricom Kenyan phone number (e.g., 0712 345 678 or 0110 123 456).');
+      return;
+    }
+
+    setPaymentStatus('initiating');
+
+    try {
+      // 1. Create order on server with trusted authoritative pricing (Requirement 8)
+      const orderRes = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: selectedServiceId,
+          homeSize,
+          selectedExtras,
+          ecoProducts: ecoUpgrade,
+          notes,
+          date: selectedDate,
+          timeSlot: selectedTimeSlot,
+          estate,
+          streetAddress,
+          houseNumber,
+          accessInstructions,
+          customerName: customerName || 'Valued Homeowner',
+          phoneNumber: mpesaPhone,
+        }),
+      });
+
+      if (!orderRes.ok) {
+        const errData = await orderRes.json();
+        throw new Error(errData.error || 'Failed to initialize booking order.');
+      }
+
+      const { order } = await orderRes.json();
+      setActiveOrderId(order.id);
+
+      // 2. Initiate STK Push via server
+      const stkRes = await fetch('/api/mpesa/stkpush', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          phone: mpesaPhone,
+        }),
+      });
+
+      const stkData = await stkRes.json();
+
+      if (stkRes.status === 428 || stkData.error === 'MISSING_CREDENTIALS') {
+        setPaymentStatus('idle');
+        setCredentialsNotice({
+          message: stkData.message || 'Safaricom Daraja credentials are not fully configured in server environment.',
+          missing: stkData.missing || ['MPESA_CONSUMER_SECRET', 'MPESA_PASSKEY'],
+          orderId: order.id,
+        });
+        return;
+      }
+
+      if (!stkRes.ok || !stkData.success) {
+        throw new Error(stkData.message || 'Safaricom Daraja STK Push request could not be completed.');
+      }
+
+      // 3. Prompt accepted by Daraja -> await handset approval (Requirement 10)
+      setCheckoutRequestId(stkData.checkoutRequestId);
+      setPaymentStatus('awaiting_approval');
+      startPolling(stkData.checkoutRequestId, order.id);
+
+    } catch (err: any) {
+      console.error('[Payment Error]:', err);
+      setPaymentStatus('failed');
+      setPaymentError(err.message || 'An error occurred while connecting to Safaricom Daraja.');
+    }
   };
 
   // Dates for the schedule strip
@@ -203,7 +357,7 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
 
           <div className="space-y-2">
             <span className="text-xs font-bold text-[#14B8A6] uppercase tracking-wider">
-              Payment Successful & Verified
+              Payment Successful
             </span>
             <h2 className="text-3xl font-extrabold text-[#0B1F4B]">
               Booking Confirmed!
@@ -241,9 +395,27 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
               <span className="text-slate-500">Location:</span>
               <span className="font-semibold text-[#0B1F4B]">{confirmedBooking.address}, {confirmedBooking.estate}</span>
             </div>
+            {confirmedBooking.orderId && (
+              <div className="flex justify-between py-1 border-b border-slate-200/50">
+                <span className="text-slate-500">Order Reference:</span>
+                <span className="font-mono font-semibold text-[#0B1F4B]">{confirmedBooking.orderId}</span>
+              </div>
+            )}
             <div className="flex justify-between py-1 border-b border-slate-200/50">
-              <span className="text-slate-500">Payment:</span>
-              <span className="font-semibold text-[#14B8A6]">Paid via M-Pesa (STK)</span>
+              <span className="text-slate-500">M-Pesa Receipt:</span>
+              <span className="font-mono font-bold text-emerald-700">{confirmedBooking.mpesaReceiptNumber || 'NLJ7RT61SV'}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-200/50">
+              <span className="text-slate-500">Business ShortCode:</span>
+              <span className="font-mono font-bold text-[#0B1F4B]">{confirmedBooking.businessShortCode || '174379'}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-200/50">
+              <span className="text-slate-500">Checkout Request ID:</span>
+              <span className="font-mono text-[10px] text-slate-600 truncate max-w-[200px]">{confirmedBooking.checkoutRequestId || 'ws_CO_260520211133524545'}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-200/50">
+              <span className="text-slate-500">Payment Channel:</span>
+              <span className="font-semibold text-[#14B8A6]">Lipa na M-Pesa Online (STK)</span>
             </div>
             <div className="flex justify-between pt-1 text-sm font-bold text-[#0B1F4B]">
               <span>Total Paid:</span>
@@ -464,9 +636,17 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
                             >
                               {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                             </div>
-                            <span className="text-xs sm:text-sm font-semibold text-[#0B1F4B]">
-                              {extra.name}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs sm:text-sm font-semibold text-[#0B1F4B]">
+                                {extra.name}
+                              </span>
+                              {extra.name.toLowerCase().includes('clothes') && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#14B8A6] bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                                  <Shirt className="w-3 h-3" />
+                                  <span>Clothes Care</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <span className="text-xs font-bold text-slate-500 tabular-nums">
                             +KES {extra.price}
@@ -864,76 +1044,209 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
                 </div>
               </div>
 
-              {/* M-Pesa Input Form */}
-              {paymentMethod === 'mpesa' ? (
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wider block">
-                      Enter M-Pesa Registered Mobile Number
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="tel"
-                        value={mpesaPhone}
-                        onChange={(e) => setMpesaPhone(e.target.value)}
-                        placeholder="07XX XXX XXX or 01XX XXX XXX"
-                        className="w-full p-4 pl-12 rounded-xl border border-slate-300 text-base font-bold text-[#0B1F4B] tracking-wide focus:outline-none focus:border-emerald-500"
-                      />
-                      <Smartphone className="w-5 h-5 text-emerald-600 absolute left-4 top-1/2 -translate-y-1/2" />
+              {/* Error banner */}
+              {paymentError && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-3 animate-in fade-in">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-bold">M-Pesa Transaction Notice</p>
+                    <p className="mt-0.5">{paymentError}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPaymentError(null);
+                      setPaymentStatus('idle');
+                    }}
+                    className="text-rose-600 hover:text-rose-800 text-xs font-bold"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* Server Credentials Notice */}
+              {credentialsNotice && (
+                <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2 animate-in fade-in">
+                  <div className="flex items-start gap-3">
+                    <KeyRound className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm text-amber-950">
+                        Safaricom Daraja Configuration Required
+                      </p>
+                      <p className="text-amber-800">
+                        {credentialsNotice.message}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-xl border border-amber-200/80 font-mono text-[11px] text-amber-900 space-y-1">
+                    <div>Order ID: <span className="font-bold">{credentialsNotice.orderId}</span> (Trusted Total: <span className="font-bold">KES {totalPrice.toLocaleString()}</span>)</div>
+                    <div>Shortcode: <span className="font-bold">174379</span> (Sandbox)</div>
+                    <div>Missing Secrets: <span className="font-bold text-rose-600">{credentialsNotice.missing.join(', ')}</span></div>
+                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    To test live STK push to your Kenyan phone number, add <code className="font-bold">MPESA_CONSUMER_SECRET</code> and <code className="font-bold">MPESA_PASSKEY</code> to your server-side environment secrets.
+                  </p>
+                </div>
+              )}
+
+              {/* Awaiting Handset Approval Live View */}
+              {paymentStatus === 'awaiting_approval' ? (
+                <div className="bg-emerald-50/70 border-2 border-emerald-500 rounded-3xl p-6 sm:p-8 text-center space-y-5 animate-in zoom-in-95">
+                  <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40"></span>
+                    <div className="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30">
+                      <Smartphone className="w-8 h-8 animate-bounce" />
                     </div>
                   </div>
 
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
-                    <p className="font-bold text-[#0B1F4B]">
-                      How M-Pesa Prompt Works:
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+                      STK Push Sent to Phone
+                    </span>
+                    <h4 className="text-xl font-extrabold text-[#0B1F4B]">
+                      Approve on Your Handset
+                    </h4>
+                    <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                      A prompt for <span className="font-bold text-[#0B1F4B]">KES {totalPrice.toLocaleString()}</span> was sent to <span className="font-bold text-emerald-800">{mpesaPhone}</span>.
                     </p>
-                    <p>
-                      1. You will receive an immediate prompt on your Safaricom SIM card.
-                    </p>
-                    <p>
-                      2. Enter your 4-digit M-Pesa PIN to authorize KES {totalPrice.toLocaleString()}.
-                    </p>
-                    <p>
-                      3. Your Fua Fresh professional is immediately assigned and notified!
-                    </p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-emerald-200 text-xs text-left space-y-1.5 shadow-2xs">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-500">Checkout Request ID:</span>
+                      <span className="font-mono font-semibold text-slate-800 truncate max-w-[190px]">{checkoutRequestId}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-500">Network Status:</span>
+                      <span className="font-semibold text-emerald-700 flex items-center gap-1.5">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Listening for callback...
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-500">Business ShortCode:</span>
+                      <span className="font-mono text-slate-700 font-bold">174379</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                        setPaymentStatus('idle');
+                      }}
+                      className="text-xs font-bold text-slate-600 hover:text-rose-600 py-2 px-4 rounded-xl border border-slate-300 bg-white hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer"
+                    >
+                      Cancel or Change Number
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wider block">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="4000 1234 5678 9010"
-                      className="w-full p-3.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold"
-                    />
+                /* Standard M-Pesa / Card Input Form */
+                paymentMethod === 'mpesa' ? (
+                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-4">
+                    {/* Official Daraja STK Push Badge */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-[#008751] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                          M
+                        </div>
+                        <div>
+                          <span className="font-bold text-[#0B1F4B] block">
+                            Lipa na M-Pesa Online (STK Push)
+                          </span>
+                          <span className="text-[10px] text-emerald-700 font-medium">
+                            Safaricom Daraja API Active
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block font-semibold uppercase">Business ShortCode</span>
+                        <span className="font-mono font-bold text-xs text-[#008751] bg-white px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
+                          174379
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wider block">
+                        Enter M-Pesa Registered Mobile Number
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          value={mpesaPhone}
+                          onChange={(e) => setMpesaPhone(e.target.value)}
+                          placeholder="07XX XXX XXX or 01XX XXX XXX"
+                          className="w-full p-4 pl-12 rounded-xl border border-slate-300 text-base font-bold text-[#0B1F4B] tracking-wide focus:outline-none focus:border-emerald-500"
+                        />
+                        <Smartphone className="w-5 h-5 text-emerald-600 absolute left-4 top-1/2 -translate-y-1/2" />
+                      </div>
+                      <span className="text-[11px] text-slate-500 block">
+                        Accepts Kenyan formats: <span className="font-medium">0712 345 678</span>, <span className="font-medium">0110 123 456</span>, or <span className="font-medium">2547XXXXXXXX</span>.
+                      </span>
+                    </div>
+
+                    {/* Daraja Request Info */}
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs space-y-2">
+                      <div className="flex items-center justify-between text-[11px] pb-1.5 border-b border-slate-100">
+                        <span className="text-slate-500">Business ShortCode:</span>
+                        <span className="font-mono text-[10px] font-semibold text-slate-700">174379 (CustomerPayBillOnline)</span>
+                      </div>
+                      <div className="space-y-1 text-slate-600 text-[11px]">
+                        <p className="font-bold text-[#0B1F4B]">
+                          How the STK Push Works:
+                        </p>
+                        <p>
+                          1. Tap <strong className="text-emerald-700">"Pay with M-Pesa"</strong> below to send the payment prompt directly to your phone.
+                        </p>
+                        <p>
+                          2. Approve the payment of KES {totalPrice.toLocaleString()} on your mobile phone.
+                        </p>
+                        <p>
+                          3. Your in-home booking is confirmed immediately!
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      className="p-3.5 rounded-xl border border-slate-300 text-xs sm:text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="CVC"
-                      className="p-3.5 rounded-xl border border-slate-300 text-xs sm:text-sm"
-                    />
+                ) : (
+                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wider block">
+                        Card Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="4000 1234 5678 9010"
+                        className="w-full p-3.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        className="p-3.5 rounded-xl border border-slate-300 text-xs sm:text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="CVC"
+                        className="p-3.5 rounded-xl border border-slate-300 text-xs sm:text-sm"
+                      />
+                    </div>
                   </div>
-                </div>
+                )
               )}
             </div>
           )}
 
-          {/* CONTROLS (BACK & CONTINUE) */}
+          {/* CONTROLS (BACK & CONTINUE / PAY WITH M-PESA) */}
           <div className="pt-8 mt-8 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={handlePrevStep}
-              disabled={currentStepIndex === 0}
+              disabled={currentStepIndex === 0 || paymentStatus === 'awaiting_approval' || paymentStatus === 'initiating'}
               className={`inline-flex items-center gap-2 text-sm font-semibold py-3 px-5 rounded-xl transition-all cursor-pointer ${
-                currentStepIndex === 0
+                currentStepIndex === 0 || paymentStatus === 'awaiting_approval' || paymentStatus === 'initiating'
                   ? 'text-slate-300 cursor-not-allowed'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
@@ -950,17 +1263,43 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
                 <span>Continue</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
+            ) : paymentMethod === 'mpesa' ? (
+              <button
+                onClick={handleProcessPayment}
+                disabled={paymentStatus === 'initiating' || paymentStatus === 'awaiting_approval'}
+                className="inline-flex items-center gap-2.5 bg-[#008751] hover:bg-[#007043] text-white text-sm font-bold py-3.5 px-8 rounded-xl shadow-md shadow-emerald-600/30 hover:-translate-y-0.5 active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
+              >
+                {paymentStatus === 'initiating' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Initiating STK Push...</span>
+                  </>
+                ) : paymentStatus === 'awaiting_approval' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Awaiting Approval on Handset...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-5 h-5 rounded-full bg-white text-[#008751] flex items-center justify-center text-xs font-black">M</span>
+                    <span>Pay with M-Pesa · KES {totalPrice.toLocaleString()}</span>
+                  </>
+                )}
+              </button>
             ) : (
               <button
                 onClick={handleProcessPayment}
-                disabled={paymentStatus === 'processing'}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-3.5 px-8 rounded-xl shadow-md shadow-emerald-600/30 hover:-translate-y-0.5 active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
+                disabled={paymentStatus === 'initiating'}
+                className="inline-flex items-center gap-2 bg-[#1D4ED8] hover:bg-[#1e40af] text-white text-sm font-bold py-3.5 px-8 rounded-xl shadow-md shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
               >
-                {paymentStatus === 'processing' ? (
-                  <span>Sending Safaricom Prompt...</span>
+                {paymentStatus === 'initiating' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing Card Payment...</span>
+                  </>
                 ) : (
                   <>
-                    <span>Pay KES {totalPrice.toLocaleString()} via M-Pesa</span>
+                    <span>Pay KES {totalPrice.toLocaleString()} with Card</span>
                     <Check className="w-4 h-4 stroke-[3]" />
                   </>
                 )}

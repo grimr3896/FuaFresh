@@ -121,25 +121,48 @@ export const ProfessionalsSection: React.FC<ProfessionalsSectionProps> = ({
           ))}
         </div>
 
-        {/* Reassurance banner */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#14B8A6] flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-6 h-6" />
+        {/* Reassurance banner & Cleaner Recruitment */}
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#14B8A6] flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-[#0B1F4B]">
+                Your Security & Sanctuary Come First
+              </h4>
+              <p className="text-xs text-slate-500">
+                Every staff member presents a digital Kenyan national ID and company badge before entering your home. Insured against damages.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('professionals')}
+              className="text-xs font-bold text-[#1D4ED8] hover:underline shrink-0"
+            >
+              Learn about our vetting →
+            </button>
           </div>
-          <div className="flex-1">
-            <h4 className="text-sm font-bold text-[#0B1F4B]">
-              Your Security & Sanctuary Come First
-            </h4>
-            <p className="text-xs text-slate-500">
-              Every staff member presents a digital Kenyan national ID and company badge before entering your home. Insured against damages.
-            </p>
+
+          {/* Dedicated Pro Recruitment Banner */}
+          <div className="bg-gradient-to-r from-teal-900 to-[#0B1F4B] text-white rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="space-y-1 text-center sm:text-left">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-teal-300 uppercase tracking-wider">
+                <span>Hiring in Kilimani, Westlands, Kileleshwa & Karen</span>
+              </div>
+              <h4 className="text-base font-extrabold text-white">
+                Are you a skilled housekeeper or cleaner in Nairobi?
+              </h4>
+              <p className="text-xs text-slate-300 max-w-xl">
+                Earn 75% of every booking with immediate M-Pesa disbursements, flexible neighborhood routes, and supplied eco-friendly detergents.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('auth')}
+              className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md whitespace-nowrap cursor-pointer transition-colors"
+            >
+              Apply as a Cleaner
+            </button>
           </div>
-          <button
-            onClick={() => onNavigate('professionals')}
-            className="text-xs font-bold text-[#1D4ED8] hover:underline shrink-0"
-          >
-            Learn about our vetting →
-          </button>
         </div>
       </div>
     </section>

@@ -1,4 +1,38 @@
-export type Page = 'home' | 'services' | 'how-it-works' | 'pricing' | 'professionals' | 'booking' | 'dashboard';
+export type Page = 'home' | 'services' | 'how-it-works' | 'pricing' | 'professionals' | 'booking' | 'dashboard' | 'auth' | 'admin' | 'cleaner-portal';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'admin' | 'customer' | 'cleaner';
+  avatar?: string;
+  joinedAt: string;
+  estate?: string;
+  title?: string;
+  // Cleaner specific profile fields
+  cleanerStatus?: 'pending' | 'approved' | 'rejected';
+  passportPhoto?: string;
+  ruiruArea?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  refereeName?: string;
+  refereePhone?: string;
+  yearsLivingInRuiru?: string;
+  specialty?: string;
+  yearsExperience?: number;
+  neighborhoods?: string[];
+  idNumber?: string;
+  goodConductCertified?: boolean;
+  availability?: string;
+  bio?: string;
+  earningsTotal?: number;
+  rating?: number;
+  jobsCompletedCount?: number;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+}
 
 export type ServiceType = 'home-cleaning' | 'laundry' | 'deep-cleaning' | 'ironing' | 'custom';
 
@@ -49,6 +83,10 @@ export interface BookingData {
   paymentMethod: 'mpesa' | 'card';
   mpesaPhone: string;
   totalPrice: number;
+  mpesaReceiptNumber?: string;
+  orderId?: string;
+  checkoutRequestId?: string;
+  businessShortCode?: string;
 }
 
 export type TrackerStage = 'confirmed' | 'assigned' | 'on_the_way' | 'arrived' | 'cleaning' | 'completed';

@@ -74,6 +74,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
               <li>
                 <button
+                  onClick={() => onNavigate('auth')}
+                  className="hover:text-white transition-colors cursor-pointer text-slate-400"
+                >
+                  Sign In / Register
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigate('cleaner-portal')}
+                  className="hover:text-white transition-colors cursor-pointer text-teal-400 font-semibold"
+                >
+                  Join as Cleaner (Earn 75%)
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => onNavigate('booking')}
                   className="hover:text-white transition-colors cursor-pointer text-[#7DD3FC]"
                 >

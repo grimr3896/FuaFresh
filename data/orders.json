@@ -1,0 +1,29 @@
+[
+  {
+    "id": "ORD-MVHZ06Q9-4188",
+    "serviceId": "home-cleaning",
+    "serviceName": "Home Cleaning",
+    "homeSize": "2 Bedroom (Standard)",
+    "basePrice": 800,
+    "selectedExtras": [
+      "Microwave & Oven Degreasing (Kitchen Deep Wash)"
+    ],
+    "extrasTotal": 400,
+    "ecoProducts": true,
+    "ecoFee": 250,
+    "totalPrice": 1450,
+    "date": "Tomorrow, 9:00 AM",
+    "timeSlot": "09:00 AM - 12:00 PM",
+    "estate": "Kilimani, Nairobi",
+    "streetAddress": "",
+    "houseNumber": "",
+    "accessInstructions": "",
+    "customerName": "Valued Customer",
+    "phoneNumber": "0712345678",
+    "status": "PAID",
+    "createdAt": "2026-10-21T10:29:42.801Z",
+    "updatedAt": "2026-10-21T10:29:58.359Z",
+    "checkoutRequestId": "ws_CO_211020261329433712345678",
+    "mpesaReceiptNumber": "QJH279XKL1"
+  }
+]

@@ -1,0 +1,100 @@
+[
+  {
+    "id": "usr_admin_1",
+    "name": "Wanjiku Mwangi",
+    "email": "admin@fuafresh.co.ke",
+    "phone": "0712345678",
+    "password": "admin123",
+    "role": "admin",
+    "avatar": "/src/assets/images/admin_profile_avatar_1794216630303.jpg",
+    "joinedAt": "2026-09-10T09:36:36.438Z",
+    "estate": "Westlands, Nairobi",
+    "title": "Operations Director"
+  },
+  {
+    "id": "usr_cust_1",
+    "name": "David Kiprono",
+    "email": "david@gmail.com",
+    "phone": "0722123456",
+    "password": "pass123",
+    "role": "customer",
+    "joinedAt": "2026-10-10T09:36:36.438Z",
+    "estate": "Kilimani, Nairobi"
+  },
+  {
+    "id": "usr_mw92vfz5_uxgd",
+    "name": "Amina Hassan",
+    "email": "amina.test@example.com",
+    "phone": "0711998877",
+    "password": "password123",
+    "role": "customer",
+    "estate": "Kilimani, Nairobi",
+    "title": "Homeowner",
+    "specialty": "Home Cleaning & Eco-Sanitization",
+    "yearsExperience": 3,
+    "neighborhoods": [
+      "Kilimani",
+      "Westlands",
+      "Kileleshwa"
+    ],
+    "idNumber": "",
+    "goodConductCertified": false,
+    "availability": "full-time",
+    "bio": "Professional housekeeping specialist dedicated to delivering spotless at-home cleaning.",
+    "earningsTotal": 0,
+    "rating": 5,
+    "jobsCompletedCount": 0,
+    "joinedAt": "2026-11-09T09:47:46.721Z"
+  },
+  {
+    "id": "usr_mw92vfzm_5rkz",
+    "name": "Faith Njeri",
+    "email": "faith.cleaner@example.com",
+    "phone": "0722334455",
+    "password": "password123",
+    "role": "cleaner",
+    "estate": "Nairobi Operations",
+    "title": "Housekeeping Specialist",
+    "avatar": "/src/assets/images/fua_pro_faith_1791329006931.jpg",
+    "specialty": "Deep Cleaning & Delicate Fabric Care",
+    "yearsExperience": 4,
+    "neighborhoods": [
+      "Westlands, Nairobi",
+      "Kileleshwa, Nairobi"
+    ],
+    "idNumber": "34892019",
+    "goodConductCertified": true,
+    "availability": "full-time",
+    "bio": "Detail-oriented housekeeping pro with 4 years experience in luxury apartments.",
+    "earningsTotal": 0,
+    "rating": 5,
+    "jobsCompletedCount": 0,
+    "joinedAt": "2026-11-09T09:47:46.738Z"
+  },
+  {
+    "id": "usr_cleaner_1",
+    "name": "Mercy Wambui",
+    "email": "mercy@fuafresh.co.ke",
+    "phone": "0712345678",
+    "password": "cleaner123",
+    "role": "cleaner",
+    "avatar": "/src/assets/images/fua_pro_mercy_1791328985938.jpg",
+    "joinedAt": "2026-09-25T09:54:04.700Z",
+    "estate": "Kilimani, Nairobi",
+    "title": "Housekeeping Specialist",
+    "specialty": "Home Cleaning & Eco-Sanitization",
+    "yearsExperience": 5,
+    "neighborhoods": [
+      "Kilimani",
+      "Kileleshwa",
+      "Lavington"
+    ],
+    "idNumber": "29841203",
+    "goodConductCertified": true,
+    "availability": "full-time",
+    "bio": "Certified hospitality specialist passionate about creating serene, impeccably organized home environments with child-safe eco detergents.",
+    "earningsTotal": 18450,
+    "rating": 4.98,
+    "jobsCompletedCount": 540
+  }
+]
