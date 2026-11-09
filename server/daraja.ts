@@ -1,90 +1,86 @@
-import { config } from './config';
+import { config, getMissingDarajaConfig } from './config';
 
 interface OAuthTokenCache {
   accessToken: string;
-  expiresAt: number; // epoch ms
+  expiresAt: number;
 }
 
 let cachedToken: OAuthTokenCache | null = null;
 
-/**
- * Validates and normalizes any Kenyan phone number to the Daraja 254XXXXXXXXX standard (12 digits).
- */
+async function readDarajaResponse(response: Response, operation: string): Promise<any> {
+  const raw = await response.text();
+  let data: any;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    const preview = raw.replace(/\s+/g, ' ').slice(0, 240);
+    throw new Error(`${operation} returned non-JSON content (HTTP ${response.status}, ${response.headers.get('content-type') || 'unknown content type'}): ${preview || 'empty response'}`);
+  }
+
+  if (!response.ok) {
+    const message = data.errorMessage || data.error_description || data.ResponseDescription || data.message || response.statusText;
+    throw new Error(`${operation} failed (HTTP ${response.status}): ${message}`);
+  }
+  return data;
+}
+
+/** Normalize a Kenyan mobile number to Daraja's 254XXXXXXXXX format. */
 export function formatPhoneNumber(input: string): string {
   const cleaned = input.replace(/\D/g, '');
-
-  if (/^254(7|1)\d{8}$/.test(cleaned)) {
-    return cleaned;
-  }
-  if (/^0(7|1)\d{8}$/.test(cleaned)) {
-    return '254' + cleaned.slice(1);
-  }
-  if (/^(7|1)\d{8}$/.test(cleaned)) {
-    return '254' + cleaned;
-  }
-
-  throw new Error(`Invalid Kenyan phone number format "${input}". Expected 07XXXXXXXX or 01XXXXXXXX.`);
+  if (/^254(7|1)\d{8}$/.test(cleaned)) return cleaned;
+  if (/^0(7|1)\d{8}$/.test(cleaned)) return '254' + cleaned.slice(1);
+  if (/^(7|1)\d{8}$/.test(cleaned)) return '254' + cleaned;
+  throw new Error('Invalid Kenyan phone number. Enter 07XXXXXXXX, 01XXXXXXXX, or 254XXXXXXXXX.');
 }
 
-/**
- * Generates the 14-digit timestamp YYYYMMDDHHmmss required by Daraja.
- */
+/** Daraja expects a timestamp in the Africa/Nairobi timezone. */
 export function getDarajaTimestamp(): string {
-  const now = new Date();
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const year = now.getFullYear();
-  const month = pad(now.getMonth() + 1);
-  const day = pad(now.getDate());
-  const hours = pad(now.getHours());
-  const minutes = pad(now.getMinutes());
-  const seconds = pad(now.getSeconds());
-  return `${year}${month}${day}${hours}${minutes}${seconds}`;
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Nairobi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const value = (type: string) => parts.find((part) => part.type === type)?.value || '';
+  return `${value('year')}${value('month')}${value('day')}${value('hour')}${value('minute')}${value('second')}`;
 }
 
-/**
- * Generates Daraja STK Push base64 password from Shortcode, Passkey, and Timestamp.
- */
 export function generateDarajaPassword(shortCode: string, passkey: string, timestamp: string): string {
   return Buffer.from(`${shortCode}${passkey}${timestamp}`).toString('base64');
 }
 
-/**
- * Obtains an OAuth access token from Safaricom Daraja using Consumer Key and Consumer Secret.
- */
 export async function getDarajaOAuthToken(): Promise<string> {
-  if (!config.consumerKey || !config.consumerSecret) {
-    throw new Error('MISSING_CREDENTIALS: MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET is not configured.');
+  const missing = getMissingDarajaConfig();
+  if (missing.length) {
+    throw new Error(`MISSING_CREDENTIALS: Missing or invalid Daraja configuration: ${missing.join(', ')}`);
   }
 
-  // Return cached token if valid with 60s buffer
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60000) {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
     return cachedToken.accessToken;
   }
 
   const authString = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString('base64');
-
   const response = await fetch(config.oauthEndpoint, {
     method: 'GET',
-    headers: {
-      Authorization: `Basic ${authString}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Basic ${authString}` },
+    signal: AbortSignal.timeout(15_000),
   });
+  const data = await readDarajaResponse(response, 'Daraja OAuth');
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Daraja OAuth authentication failed (${response.status}): ${errorText}`);
+  if (!data.access_token) {
+    throw new Error('Daraja OAuth response did not contain an access token.');
   }
 
-  const data = await response.json();
-  const expiresIn = parseInt(data.expires_in || '3599', 10);
-
+  const expiresIn = Number.parseInt(String(data.expires_in || '3599'), 10);
   cachedToken = {
     accessToken: data.access_token,
-    expiresAt: Date.now() + expiresIn * 1000,
+    expiresAt: Date.now() + (Number.isFinite(expiresIn) ? expiresIn : 3599) * 1000,
   };
-
-  return data.access_token;
+  return cachedToken.accessToken;
 }
 
 export interface StkPushParams {
@@ -104,39 +100,34 @@ export interface StkPushResponse {
   customerMessage: string;
 }
 
-/**
- * Initiates an M-Pesa Express (STK Push) transaction via Safaricom Daraja.
- */
 export async function initiateStkPush(params: StkPushParams): Promise<StkPushResponse> {
-  if (!config.consumerKey) {
-    throw new Error('MISSING_CREDENTIALS: MPESA_CONSUMER_KEY is missing.');
-  }
-  if (!config.consumerSecret) {
-    throw new Error('MISSING_CREDENTIALS: MPESA_CONSUMER_SECRET is missing. Please set it in server secrets.');
-  }
-  if (!config.passkey) {
-    throw new Error('MISSING_CREDENTIALS: MPESA_PASSKEY is missing. Please set it in server secrets.');
+  const amount = Math.round(Number(params.amount));
+  if (!Number.isFinite(amount) || amount < 1) {
+    throw new Error('STK Push amount must be a positive whole number of Kenya shillings.');
   }
 
   const accessToken = await getDarajaOAuthToken();
   const formattedPhone = formatPhoneNumber(params.phoneNumber);
   const timestamp = getDarajaTimestamp();
   const password = generateDarajaPassword(config.businessShortCode, config.passkey, timestamp);
-
   const callbackUrl = params.callbackUrl || config.callbackUrl;
+
+  if (!callbackUrl || !callbackUrl.startsWith('https://')) {
+    throw new Error('A publicly accessible HTTPS MPESA_CALLBACK_URL is required.');
+  }
 
   const payload = {
     BusinessShortCode: config.businessShortCode,
     Password: password,
     Timestamp: timestamp,
     TransactionType: config.transactionType,
-    Amount: Math.round(params.amount),
+    Amount: amount,
     PartyA: formattedPhone,
     PartyB: config.partyB,
     PhoneNumber: formattedPhone,
     CallBackURL: callbackUrl,
-    AccountReference: params.accountReference || 'FuaFresh',
-    TransactionDesc: params.transactionDesc || `Order ${params.orderId}`,
+    AccountReference: (params.accountReference || 'FuaFresh').slice(0, 12),
+    TransactionDesc: (params.transactionDesc || `Order ${params.orderId}`).slice(0, 13),
   };
 
   const response = await fetch(config.stkPushEndpoint, {
@@ -146,21 +137,23 @@ export async function initiateStkPush(params: StkPushParams): Promise<StkPushRes
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20_000),
   });
+  const data = await readDarajaResponse(response, 'Daraja STK Push');
 
-  const responseData = await response.json();
-
-  if (!response.ok || responseData.ResponseCode !== '0') {
-    const errorMsg = responseData.errorMessage || responseData.ResponseDescription || 'STK Push request rejected by Daraja';
-    throw new Error(`Daraja STK Push Error: ${errorMsg}`);
+  if (String(data.ResponseCode) !== '0') {
+    throw new Error(data.errorMessage || data.ResponseDescription || 'Daraja rejected the STK Push request.');
+  }
+  if (!data.CheckoutRequestID || !data.MerchantRequestID) {
+    throw new Error('Daraja accepted the request but returned incomplete request identifiers.');
   }
 
   return {
-    merchantRequestId: responseData.MerchantRequestID,
-    checkoutRequestId: responseData.CheckoutRequestID,
-    responseCode: responseData.ResponseCode,
-    responseDescription: responseData.ResponseDescription,
-    customerMessage: responseData.CustomerMessage,
+    merchantRequestId: data.MerchantRequestID,
+    checkoutRequestId: data.CheckoutRequestID,
+    responseCode: String(data.ResponseCode),
+    responseDescription: data.ResponseDescription || '',
+    customerMessage: data.CustomerMessage || 'Check your phone to complete the M-Pesa payment.',
   };
 }
 
@@ -173,41 +166,34 @@ export interface StkQueryResponse {
   resultDesc: string;
 }
 
-/**
- * Actively queries Daraja STK Push status in case callback is delayed or in sandbox mode.
- */
 export async function queryStkPush(checkoutRequestId: string): Promise<StkQueryResponse> {
-  if (!config.consumerKey || !config.consumerSecret || !config.passkey) {
-    throw new Error('MISSING_CREDENTIALS: Daraja credentials not fully configured.');
-  }
+  if (!checkoutRequestId) throw new Error('checkoutRequestId is required.');
 
   const accessToken = await getDarajaOAuthToken();
   const timestamp = getDarajaTimestamp();
   const password = generateDarajaPassword(config.businessShortCode, config.passkey, timestamp);
-
-  const payload = {
-    BusinessShortCode: config.businessShortCode,
-    Password: password,
-    Timestamp: timestamp,
-    CheckoutRequestID: checkoutRequestId,
-  };
-
   const response = await fetch(config.stkQueryEndpoint, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      BusinessShortCode: config.businessShortCode,
+      Password: password,
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestId,
+    }),
+    signal: AbortSignal.timeout(20_000),
   });
+  const data = await readDarajaResponse(response, 'Daraja STK status query');
 
-  const data = await response.json();
   return {
-    responseCode: data.ResponseCode || '',
+    responseCode: String(data.ResponseCode ?? ''),
     responseDescription: data.ResponseDescription || '',
     merchantRequestId: data.MerchantRequestID || '',
-    checkoutRequestId: data.CheckoutRequestID || '',
-    resultCode: String(data.ResultCode ?? ''),
+    checkoutRequestId: data.CheckoutRequestID || checkoutRequestId,
+    resultCode: data.ResultCode === undefined || data.ResultCode === null ? '' : String(data.ResultCode),
     resultDesc: data.ResultDesc || '',
   };
 }
