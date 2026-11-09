@@ -594,62 +594,6 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     </>
                   )}
                 </button>
-
-                {/* Quick-Fill Demo Buttons */}
-                <div className="pt-4 mt-4 border-t border-slate-100 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                    One-Click Demo Fill:
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail('david@gmail.com');
-                        setPassword('pass123');
-                        setErrorMessage(null);
-                      }}
-                      className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/60 text-left transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Home className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-xs font-bold text-[#0B1F4B]">Client Account</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono block mt-0.5">david@gmail.com</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail('mercy@fuafresh.co.ke');
-                        setPassword('cleaner123');
-                        setErrorMessage(null);
-                      }}
-                      className="p-2.5 rounded-xl border border-teal-200 bg-teal-50/60 hover:bg-teal-100/60 text-left transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5 text-teal-700" />
-                        <span className="text-xs font-bold text-[#0B1F4B]">Approved Cleaner</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono block mt-0.5">mercy@fuafresh.co.ke</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail('admin@fuafresh.co.ke');
-                        setPassword('admin123');
-                        setErrorMessage(null);
-                      }}
-                      className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100/60 text-left transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5 text-[#1D4ED8]" />
-                        <span className="text-xs font-bold text-[#0B1F4B]">Admin Console</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono block mt-0.5">admin@fuafresh.co.ke</span>
-                    </button>
-                  </div>
-                </div>
               </form>
             )}
 
