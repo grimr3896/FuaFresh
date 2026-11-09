@@ -18,42 +18,67 @@ export interface DarajaConfig {
   port: number;
 }
 
-const env = (process.env.MPESA_ENV || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
+const environment = (
+  process.env.MPESA_ENVIRONMENT ||
+  process.env.MPESA_ENV ||
+  'sandbox'
+).toLowerCase();
+
+if (!['sandbox', 'production'].includes(environment)) {
+  throw new Error('MPESA_ENVIRONMENT must be either "sandbox" or "production".');
+}
+
+const env = environment as 'sandbox' | 'production';
 const apiBaseUrl = env === 'production'
   ? 'https://api.safaricom.co.ke'
   : 'https://sandbox.safaricom.co.ke';
 
-const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+const appUrl = (process.env.APP_URL || '').trim().replace(/\/$/, '');
 const customCallback = (process.env.MPESA_CALLBACK_URL || '').trim();
-const defaultCallback = appUrl ? `${appUrl}/api/mpesa/callback` : 'https://sandbox.safaricom.co.ke/mpesa/stkpush/callback';
+const callbackUrl = customCallback || (appUrl ? `${appUrl}/api/mpesa/callback` : '');
 
 export const config: DarajaConfig = {
   env,
-  // Default sandbox Consumer Key supplied in specification
-  consumerKey: process.env.MPESA_CONSUMER_KEY || 'HieidBRu3Ux4aG4ozA0p3gWVcsQRiP0R9HmXabzPGW2tZRBj',
-  // Read secrets from server-side environment variables or provided sandbox credentials
-  consumerSecret: process.env.MPESA_CONSUMER_SECRET || 'wqypArkTXVo81ZbGHfR2AYMiEHvgVdSnHN0IYXnVJxk5ydwpele0R3V8Wqi0E0J3',
-  passkey: process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919',
-  businessShortCode: process.env.MPESA_BUSINESS_SHORTCODE || '174379',
-  transactionType: process.env.MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline',
-  partyB: process.env.MPESA_PARTY_B || '174379',
-  callbackUrl: customCallback || defaultCallback,
+  // Secrets are read only from server-side environment variables. Never hardcode credentials.
+  consumerKey: (process.env.DARAJA_CONSUMER_KEY || process.env.MPESA_CONSUMER_KEY || '').trim(),
+  consumerSecret: (process.env.DARAJA_CONSUMER_SECRET || process.env.MPESA_CONSUMER_SECRET || '').trim(),
+  passkey: (process.env.MPESA_PASSKEY || '').trim(),
+  businessShortCode: (process.env.MPESA_SHORTCODE || process.env.MPESA_BUSINESS_SHORTCODE || '').trim(),
+  transactionType: (process.env.MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline').trim(),
+  partyB: (process.env.MPESA_PARTY_B || process.env.MPESA_SHORTCODE || process.env.MPESA_BUSINESS_SHORTCODE || '').trim(),
+  callbackUrl,
   apiBaseUrl,
   oauthEndpoint: `${apiBaseUrl}/oauth/v1/generate?grant_type=client_credentials`,
   stkPushEndpoint: `${apiBaseUrl}/mpesa/stkpush/v1/processrequest`,
   stkQueryEndpoint: `${apiBaseUrl}/mpesa/stkpushquery/v1/query`,
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: Number.parseInt(process.env.PORT || '3000', 10),
 };
 
+export function getMissingDarajaConfig(): string[] {
+  const missing: string[] = [];
+  if (!config.consumerKey) missing.push('DARAJA_CONSUMER_KEY');
+  if (!config.consumerSecret) missing.push('DARAJA_CONSUMER_SECRET');
+  if (!config.passkey) missing.push('MPESA_PASSKEY');
+  if (!config.businessShortCode) missing.push('MPESA_SHORTCODE');
+  if (!config.partyB) missing.push('MPESA_PARTY_B (or MPESA_SHORTCODE)');
+  if (!config.callbackUrl) missing.push('MPESA_CALLBACK_URL (or APP_URL)');
+  if (config.callbackUrl && !config.callbackUrl.startsWith('https://')) {
+    missing.push('MPESA_CALLBACK_URL must be a public HTTPS URL');
+  }
+  return missing;
+}
+
 export function getPublicConfigStatus() {
+  const missing = getMissingDarajaConfig();
   return {
     environment: config.env,
-    businessShortCode: config.businessShortCode,
+    businessShortCode: config.businessShortCode || null,
     transactionType: config.transactionType,
     hasConsumerKey: Boolean(config.consumerKey),
     hasConsumerSecret: Boolean(config.consumerSecret),
     hasPasskey: Boolean(config.passkey),
-    callbackUrl: config.callbackUrl,
-    isReady: Boolean(config.consumerKey && config.consumerSecret && config.passkey),
+    hasCallbackUrl: Boolean(config.callbackUrl),
+    missing,
+    isReady: missing.length === 0,
   };
 }
