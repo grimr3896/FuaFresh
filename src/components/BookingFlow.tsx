@@ -235,9 +235,9 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
         if (!res.ok) return;
         const data = await readApiResponse(res);
 
-        if (data.status === 'SUCCESS') {
+        if (data.status === 'SUCCESS' && data.mpesaReceiptNumber) {
           clearInterval(pollTimerRef.current);
-          completeBooking(data.mpesaReceiptNumber || 'NLJ7RT61SV', cReqId, ordId);
+          completeBooking(data.mpesaReceiptNumber, cReqId, ordId);
         } else if (data.status === 'CANCELLED') {
           clearInterval(pollTimerRef.current);
           setPaymentStatus('cancelled');
@@ -260,10 +260,8 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
     setCredentialsNotice(null);
 
     if (paymentMethod === 'card') {
-      setPaymentStatus('initiating');
-      setTimeout(() => {
-        completeBooking('CRD-9482-VISA');
-      }, 1500);
+      setPaymentStatus('idle');
+      setPaymentError('Card payments are not connected yet. Please select M-Pesa to continue.');
       return;
     }
 
@@ -299,7 +297,7 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
       });
 
       if (!orderRes.ok) {
-        const errData = await orderRes.json();
+        const errData = await readApiResponse(orderRes);
         throw new Error(errData.error || 'Failed to initialize booking order.');
       }
 
