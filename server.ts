@@ -149,9 +149,9 @@ async function startServer() {
         return res.status(428).json({
           success: false,
           error: 'MISSING_CREDENTIALS',
-          message: 'Safaricom Daraja credentials are not fully configured. Please set MPESA_CONSUMER_SECRET and MPESA_PASSKEY in your server-side environment secrets.',
+          message: 'Safaricom Daraja credentials are not fully configured. Please set DARAJA_CONSUMER_SECRET, MPESA_PASSKEY, MPESA_SHORTCODE, and MPESA_CALLBACK_URL in your server-side environment secrets.',
           missing: [
-            ...(!config.consumerSecret ? ['MPESA_CONSUMER_SECRET'] : []),
+            ...(!config.consumerSecret ? ['DARAJA_CONSUMER_SECRET'] : []),
             ...(!config.passkey ? ['MPESA_PASSKEY'] : []),
           ],
           orderId: order.id,
@@ -219,7 +219,7 @@ async function startServer() {
   // -------------------------------------------------------------
   app.post('/api/mpesa/callback', (req: Request, res: Response) => {
     try {
-      console.log('[Daraja Callback] Received payload:', JSON.stringify(req.body));
+      console.log('[Daraja Callback] Received payment notification.');
       const callback = req.body?.Body?.stkCallback;
 
       if (!callback) {
@@ -331,7 +331,7 @@ async function startServer() {
 
             storage.updateOrder(payment.orderId, {
               status: 'PAID',
-              mpesaReceiptNumber: payment.mpesaReceiptNumber || 'MPESA_VERIFIED',
+              mpesaReceiptNumber: payment.mpesaReceiptNumber,
             });
           } else if (queryResult.resultCode === '1032') {
             payment = storage.updatePayment(checkoutRequestId, {
