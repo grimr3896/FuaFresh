@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { calculateOrderPricing } from '../../server/pricing';
 import { getSupabaseAdmin } from '../../server/supabaseAdmin';
 
 function makeOrderId() {
-  return `ORD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  return `ORD-${Date.now().toString(36).toUpperCase()}-${randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 export default async function handler(req: any, res: any) {
