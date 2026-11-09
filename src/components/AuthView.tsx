@@ -208,11 +208,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
     if (!res.success) {
       setErrorMessage(res.error || 'Registration could not be completed.');
-    } else {
+    } else if (res.user) {
       setSuccessNotice('Account created successfully! Taking you to your dashboard...');
-      setTimeout(() => {
-        onNavigate('dashboard');
-      }, 700);
+      setTimeout(() => onNavigate('dashboard'), 700);
+    } else {
+      setSuccessNotice(res.message || 'Account created. Check your email for a verification link, then sign in.');
     }
   };
 
