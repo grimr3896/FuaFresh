@@ -1,3 +1,4 @@
+import { queryStkPush } from '../../server/daraja';
 import { getSupabaseAdmin } from '../../server/supabaseAdmin';
 
 export default async function handler(req: any, res: any) {
@@ -36,6 +37,13 @@ export default async function handler(req: any, res: any) {
       if (!receipt || amount !== Number(payment.amount) || (paidPhone && paidPhone !== payment.phone_number)) {
         console.error('[mpesa/callback] Success callback did not match stored payment details.');
         return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted; awaiting verified receipt details' });
+      }
+
+      // Verify the checkout identifier with Daraja before trusting callback metadata.
+      const verification = await queryStkPush(checkoutRequestId);
+      if (verification.resultCode !== '0') {
+        console.warn('[mpesa/callback] Daraja query has not confirmed this successful callback yet.');
+        return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted; awaiting Daraja verification' });
       }
 
       const transactionDate = value('TransactionDate');
