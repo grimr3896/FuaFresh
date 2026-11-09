@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import type { Session, User as SupabaseAuthUser } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -29,251 +31,188 @@ interface AuthContextType {
     refereePhone?: string;
     yearsLivingInRuiru?: string;
   }) => Promise<{ success: boolean; error?: string; user?: User; pendingApproval?: boolean; message?: string }>;
-  signOut: () => void;
-  quickLoginAs: (role: 'admin' | 'customer' | 'cleaner') => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'fua_user_session';
+function mapProfile(profile: any): User {
+  return {
+    id: profile.id,
+    name: profile.full_name,
+    email: profile.email,
+    phone: profile.phone || '',
+    role: profile.role,
+    avatar: profile.avatar || profile.passport_photo || undefined,
+    joinedAt: profile.joined_at || profile.created_at,
+    estate: profile.estate || undefined,
+    title: profile.title || undefined,
+    cleanerStatus: profile.cleaner_status || undefined,
+    passportPhoto: profile.passport_photo || undefined,
+    ruiruArea: profile.ruiru_area || undefined,
+    emergencyContactName: profile.emergency_contact_name || undefined,
+    emergencyContactPhone: profile.emergency_contact_phone || undefined,
+    refereeName: profile.referee_name || undefined,
+    refereePhone: profile.referee_phone || undefined,
+    yearsLivingInRuiru: profile.years_living_in_ruiru || undefined,
+    specialty: profile.specialty || undefined,
+    yearsExperience: profile.years_experience ?? undefined,
+    neighborhoods: profile.neighborhoods || [],
+    idNumber: profile.id_number || undefined,
+    goodConductCertified: Boolean(profile.good_conduct_certified),
+    availability: profile.availability || undefined,
+    bio: profile.bio || undefined,
+    earningsTotal: Number(profile.earnings_total || 0),
+    rating: Number(profile.rating || 5),
+    jobsCompletedCount: Number(profile.jobs_completed_count || 0),
+    reviewedAt: profile.reviewed_at || undefined,
+    reviewedBy: profile.reviewed_by || undefined,
+    rejectionReason: profile.rejection_reason || undefined,
+  };
+}
 
-export const DEMO_ADMIN: User = {
-  id: 'usr_admin_1',
-  name: 'Wanjiku Mwangi',
-  email: 'admin@fuafresh.co.ke',
-  phone: '0712 345 678',
-  role: 'admin',
-  avatar: '/src/assets/images/admin_profile_avatar_1794216630303.jpg',
-  joinedAt: '2026-01-15T08:00:00Z',
-  estate: 'Westlands, Nairobi',
-  title: 'Operations Director',
-};
+async function loadProfile(authUser: SupabaseAuthUser): Promise<User> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', authUser.id)
+    .single();
 
-export const DEMO_CUSTOMER: User = {
-  id: 'usr_cust_1',
-  name: 'David Kiprono',
-  email: 'david@gmail.com',
-  phone: '0722 123 456',
-  role: 'customer',
-  joinedAt: '2026-02-10T10:30:00Z',
-  estate: 'Kilimani, Nairobi',
-  title: 'Homeowner',
-};
+  if (error || !data) {
+    throw new Error('Your account profile could not be loaded. Please contact Fua Fresh support.');
+  }
 
-export const DEMO_CLEANER: User = {
-  id: 'usr_cleaner_1',
-  name: 'Mercy Wambui',
-  email: 'mercy@fuafresh.co.ke',
-  phone: '0712 345 678',
-  role: 'cleaner',
-  avatar: '/src/assets/images/fua_pro_mercy_1791328985938.jpg',
-  joinedAt: '2026-01-20T09:00:00Z',
-  estate: 'Kilimani, Nairobi',
-  title: 'Housekeeping Specialist',
-  specialty: 'Home Cleaning & Eco-Sanitization',
-  yearsExperience: 5,
-  neighborhoods: ['Kilimani', 'Kileleshwa', 'Lavington'],
-  goodConductCertified: true,
-  availability: 'full-time',
-  bio: 'Certified hospitality specialist passionate about creating serene, impeccably organized home environments with child-safe eco detergents.',
-  earningsTotal: 18450,
-  rating: 4.98,
-  jobsCompletedCount: 540,
-};
+  return mapProfile(data);
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved user session');
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
+    let mounted = true;
+
+    const applySession = async (session: Session | null) => {
+      if (!session?.user) {
+        if (mounted) setCurrentUser(null);
+        return;
+      }
+
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-      } catch (e) {
-        console.warn('Failed to persist user session');
+        const profile = await loadProfile(session.user);
+        if (mounted) setCurrentUser(profile);
+      } catch (error) {
+        console.error('[Fua Fresh Auth] Profile load failed:', error);
+        if (mounted) setCurrentUser(null);
       }
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    };
+
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (error) console.error('[Fua Fresh Auth] Session restore failed:', error);
+      await applySession(data.session);
+      if (mounted) setAuthReady(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Defer profile fetching so the auth event callback does not block Supabase's lock.
+      setTimeout(() => { void applySession(session); }, 0);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (error || !data.user) {
+      return { success: false, error: error?.message || 'Unable to sign in.' };
     }
-  }, [currentUser]);
 
-  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: User; pendingApproval?: boolean }> => {
     try {
-      const res = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        if (data.pendingApproval) {
-          return {
-            success: false,
-            pendingApproval: true,
-            error: data.error || 'Your cleaner application is pending operations approval.',
-          };
-        }
-        // Fallback demo check if offline or network issue
-        if (email.toLowerCase().includes('admin') && password === 'admin123') {
-          setCurrentUser(DEMO_ADMIN);
-          return { success: true, user: DEMO_ADMIN };
-        }
-        if (email.toLowerCase().includes('mercy') || email.toLowerCase().includes('cleaner')) {
-          setCurrentUser(DEMO_CLEANER);
-          return { success: true, user: DEMO_CLEANER };
-        }
-        if (email.toLowerCase().includes('david') || email.toLowerCase().includes('customer')) {
-          setCurrentUser(DEMO_CUSTOMER);
-          return { success: true, user: DEMO_CUSTOMER };
-        }
-        return { success: false, error: data.error || 'Failed to sign in. Please verify your credentials.' };
-      }
-
-      setCurrentUser(data.user);
-      return { success: true, user: data.user };
-    } catch (err: any) {
-      // Local demo fallback for resilient development
-      if (email.toLowerCase().includes('admin')) {
-        setCurrentUser(DEMO_ADMIN);
-        return { success: true, user: DEMO_ADMIN };
-      }
-      if (email.toLowerCase().includes('mercy') || email.toLowerCase().includes('cleaner')) {
-        setCurrentUser(DEMO_CLEANER);
-        return { success: true, user: DEMO_CLEANER };
-      }
-      if (email.toLowerCase().includes('david') || email.toLowerCase().includes('customer')) {
-        setCurrentUser(DEMO_CUSTOMER);
-        return { success: true, user: DEMO_CUSTOMER };
-      }
-      return { success: false, error: err.message || 'Connection to authentication service failed.' };
-    }
-  };
-
-  const signUp = async (userData: {
-    name: string;
-    email: string;
-    phone: string;
-    password: string;
-    role?: 'admin' | 'customer' | 'cleaner';
-    estate?: string;
-    specialty?: string;
-    yearsExperience?: number;
-    neighborhoods?: string[];
-    idNumber?: string;
-    goodConductCertified?: boolean;
-    availability?: string;
-    bio?: string;
-    passportPhoto?: string;
-    ruiruArea?: string;
-    emergencyContactName?: string;
-    emergencyContactPhone?: string;
-    refereeName?: string;
-    refereePhone?: string;
-    yearsLivingInRuiru?: string;
-  }): Promise<{ success: boolean; error?: string; user?: User; pendingApproval?: boolean; message?: string }> => {
-    try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        return { success: false, error: data.error || 'Could not complete registration.' };
-      }
-
-      // If cleaner is pending approval, do not immediately log them into dispatch
-      if (data.pendingApproval || userData.role === 'cleaner') {
+      const profile = await loadProfile(data.user);
+      if (profile.role === 'cleaner' && profile.cleanerStatus === 'pending') {
+        await supabase.auth.signOut();
         return {
-          success: true,
+          success: false,
           pendingApproval: true,
-          user: data.user,
-          message: data.message || 'Application submitted! Waiting for approval by Operations.',
+          error: 'Your cleaner application is awaiting Operations approval.',
         };
       }
-
-      setCurrentUser(data.user);
-      return { success: true, user: data.user };
-    } catch (err: any) {
-      const localUser: User = {
-        id: `usr_${Date.now().toString(36)}`,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        role: userData.role || 'customer',
-        estate: userData.estate || 'Ruiru, Kiambu/Nairobi Metropolitan',
-        specialty: userData.specialty,
-        yearsExperience: userData.yearsExperience,
-        neighborhoods: userData.neighborhoods,
-        idNumber: userData.idNumber,
-        goodConductCertified: userData.goodConductCertified,
-        availability: userData.availability,
-        bio: userData.bio,
-        passportPhoto: userData.passportPhoto,
-        ruiruArea: userData.ruiruArea,
-        emergencyContactName: userData.emergencyContactName,
-        emergencyContactPhone: userData.emergencyContactPhone,
-        refereeName: userData.refereeName,
-        refereePhone: userData.refereePhone,
-        yearsLivingInRuiru: userData.yearsLivingInRuiru,
-        cleanerStatus: userData.role === 'cleaner' ? 'pending' : undefined,
-        joinedAt: new Date().toISOString(),
-      };
-      if (userData.role !== 'cleaner') {
-        setCurrentUser(localUser);
+      if (profile.role === 'cleaner' && profile.cleanerStatus === 'rejected') {
+        await supabase.auth.signOut();
+        return {
+          success: false,
+          error: profile.rejectionReason || 'Your cleaner application was not approved.',
+        };
       }
+      setCurrentUser(profile);
+      return { success: true, user: profile };
+    } catch (profileError: any) {
+      await supabase.auth.signOut();
+      return { success: false, error: profileError.message || 'Could not load your account profile.' };
+    }
+  };
+
+  const signUp: AuthContextType['signUp'] = async (userData) => {
+    const role = userData.role === 'cleaner' ? 'cleaner' : 'customer';
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email.trim().toLowerCase(),
+      password: userData.password,
+      options: {
+        data: {
+          ...userData,
+          role,
+          name: userData.name.trim(),
+          email: userData.email.trim().toLowerCase(),
+          phone: userData.phone.trim(),
+        },
+      },
+    });
+
+    if (error) return { success: false, error: error.message };
+
+    if (role === 'cleaner') {
       return {
         success: true,
-        user: localUser,
-        pendingApproval: userData.role === 'cleaner',
-        message: 'Application received and waiting for approval.',
+        pendingApproval: true,
+        message: 'Your cleaner application has been received and is awaiting Operations approval. Please verify your email if requested.',
       };
     }
-  };
 
-  const signOut = () => {
-    setCurrentUser(null);
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const quickLoginAs = (role: 'admin' | 'customer' | 'cleaner') => {
-    if (role === 'admin') {
-      setCurrentUser(DEMO_ADMIN);
-    } else if (role === 'cleaner') {
-      setCurrentUser(DEMO_CLEANER);
-    } else {
-      setCurrentUser(DEMO_CUSTOMER);
+    if (data.session && data.user) {
+      try {
+        const profile = await loadProfile(data.user);
+        setCurrentUser(profile);
+        return { success: true, user: profile, message: 'Your account has been created.' };
+      } catch (profileError: any) {
+        return { success: false, error: profileError.message || 'Account created, but profile setup is still completing. Please sign in shortly.' };
+      }
     }
+
+    return {
+      success: true,
+      message: 'Account created. Please check your email for a verification link, then sign in.',
+    };
   };
 
-  const isAuthenticated = Boolean(currentUser);
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('[Fua Fresh Auth] Sign-out failed:', error);
+    setCurrentUser(null);
+  };
+
+  const isAuthenticated = Boolean(currentUser) && authReady;
   const isAdmin = currentUser?.role === 'admin';
   const isCleaner = currentUser?.role === 'cleaner';
 
   return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        isAuthenticated,
-        isAdmin,
-        isCleaner,
-        signIn,
-        signUp,
-        signOut,
-        quickLoginAs,
-      }}
-    >
+    <AuthContext.Provider value={{ currentUser, isAuthenticated, isAdmin, isCleaner, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -281,8 +220,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
